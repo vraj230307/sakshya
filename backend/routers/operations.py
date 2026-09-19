@@ -35,7 +35,7 @@ class WebSocketManager:
 ws_manager = WebSocketManager()
 
 @router.post("/cases/{case_id}/operations", response_model=schemas.OperationResponse)
-def create_operation(case_id: str, payload: schemas.OperationCreate, db: Session = Depends(get_db)):
+async def create_operation(case_id: str, payload: schemas.OperationCreate, db: Session = Depends(get_db)):
     device = db.query(models.Device).filter(models.Device.id == payload.device_id).first()
     if not device:
         raise HTTPException(status_code=404, detail="Target device not found")

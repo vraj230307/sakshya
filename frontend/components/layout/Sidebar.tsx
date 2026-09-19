@@ -64,7 +64,7 @@ export default function Sidebar() {
       {/* Footer Info */}
       <div className="border-t border-slate-800/80 pt-3 text-[11px] text-slate-500">
         <p>Sakshya Forensics v2.4</p>
-        <p className="font-mono text-[10px]">NTRO SIH26149 Compliance</p>
+        <p className="font-mono text-[10px]">Statutory Compliance Edition</p>
       </div>
     </aside>
   );

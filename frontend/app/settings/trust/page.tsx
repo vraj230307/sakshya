@@ -10,10 +10,17 @@ export default function TrustSettingsPage() {
   const [currentMethod, setCurrentMethod] = useState<string>("STUB_HMAC_ED25519");
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("sakshya_trust_method");
+        if (stored) setCurrentMethod(stored);
+      } catch (e) {}
+    }
+
     getTrustStatus()
       .then((data) => {
         setTrustData(data);
-        if (data?.current_method) {
+        if (data?.current_method && !localStorage.getItem("sakshya_trust_method")) {
           setCurrentMethod(data.current_method);
         }
       })
@@ -22,6 +29,16 @@ export default function TrustSettingsPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSelectMethod = (methodId: string) => {
+    setCurrentMethod(methodId);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("sakshya_trust_method", methodId);
+        window.dispatchEvent(new Event("storage"));
+      } catch (e) {}
+    }
+  };
 
   const availableMethods = trustData?.available_methods || [
     {
@@ -99,7 +116,7 @@ export default function TrustSettingsPage() {
                   <p className="text-xs text-slate-400 mt-1">{method.description}</p>
                 </div>
                 <button
-                  onClick={() => setCurrentMethod(method.id)}
+                  onClick={() => handleSelectMethod(method.id)}
                   disabled={method.id === currentMethod}
                   className="px-3.5 py-1.5 rounded-lg bg-obsidian-800 border border-slate-700 text-xs font-mono text-slate-300 hover:border-forensic-cyan transition disabled:opacity-50"
                 >

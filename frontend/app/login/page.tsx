@@ -56,11 +56,22 @@ export default function LoginPage() {
           <p className="text-xs text-slate-400 mt-1">Sakshya Forensics Platform • Authorized Law Enforcement Access Only</p>
         </div>
 
+        {/* Hackathon Evaluation Sandbox Banner */}
+        <div className="mb-6 bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs text-amber-300 font-mono flex items-start gap-2.5">
+          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-bold text-amber-200 uppercase tracking-wider">Evaluation Sandbox Mode Only</div>
+            <p className="text-[11px] text-amber-300/80 mt-0.5 leading-relaxed">
+              ⚠️ The 1-click presets below exist strictly for SIH Hackathon jury evaluation speed. In statutory LEA deployment, direct bypass is disabled; hardware PKCS#11 / FIDO2 token attestation and CCTNS badge authentication are mandatory.
+            </p>
+          </div>
+        </div>
+
         {/* Quick Demo Login Presets */}
         <div className="mb-6 bg-obsidian-900/90 p-4 rounded-xl border border-slate-800">
           <div className="text-xs font-mono font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
             <UserCheck className="w-4 h-4 text-emerald-400" />
-            <span>QUICK DEMO PRESETS (1-CLICK)</span>
+            <span>SIH EVALUATOR PRESETS (1-CLICK DEMO)</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <button

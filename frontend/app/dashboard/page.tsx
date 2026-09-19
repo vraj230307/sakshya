@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { PlusCircle, ShieldCheck, HardDrive, Trash2, FileText, CheckCircle2, History, AlertTriangle } from "lucide-react";
+import { PlusCircle, ShieldCheck, HardDrive, Trash2, FileText, CheckCircle2, History, Search } from "lucide-react";
 import { getCases, Case } from "@/lib/api";
 
 export default function DashboardPage() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   useEffect(() => {
     getCases()
@@ -15,6 +17,15 @@ export default function DashboardPage() {
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
   }, []);
+
+  const filteredCases = cases.filter((c) => {
+    const matchesSearch =
+      c.fir_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.case_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.officer_id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "ALL" || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
@@ -66,9 +77,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Active Case List Table */}
-      <div className="p-6 rounded-xl bg-obsidian-850/90 border border-slate-800">
-        <div className="flex items-center justify-between mb-4">
+      {/* Active Case List Table & Search Filter */}
+      <div className="p-6 rounded-xl bg-obsidian-850/90 border border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-white">Active Forensic Cases</h2>
             <p className="text-xs text-slate-400">Registered FIRs with baseline SHA-256 evidence acquisition hashes</p>
@@ -78,8 +89,42 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {/* Search & Filter Bar */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-1">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+            <input
+              type="text"
+              placeholder="Search by FIR number, case type, or officer badge..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 rounded-lg bg-obsidian-900 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-forensic-cyan"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 font-mono text-xs">
+            {["ALL", "IN_PROGRESS", "OPEN"].map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3 py-1.5 rounded-lg font-bold transition ${
+                  statusFilter === st
+                    ? "bg-forensic-cyan text-obsidian-950 shadow-md shadow-forensic-cyan/15"
+                    : "bg-obsidian-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {loading ? (
           <div className="py-8 text-center text-xs text-slate-400 font-mono">Loading active forensic cases...</div>
+        ) : filteredCases.length === 0 ? (
+          <div className="py-8 text-center text-xs text-slate-500 font-mono">
+            No matching cases found for &quot;{searchQuery}&quot;.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -94,7 +139,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {cases.map((c) => (
+                {filteredCases.map((c) => (
                   <tr key={c.id} className="hover:bg-obsidian-800/50 transition">
                     <td className="py-3.5 font-bold text-forensic-cyan font-mono">{c.fir_number}</td>
                     <td className="py-3.5 text-slate-200">{c.case_type}</td>
@@ -109,7 +154,7 @@ export default function DashboardPage() {
                     <td className="py-3.5 font-mono text-slate-400 text-[11px]">
                       {new Date(c.created_at).toLocaleDateString()}
                     </td>
-                    <td className="py-3.5 text-right space-x-2">
+                    <td className="py-3.5 text-right space-x-1.5">
                       <Link href={`/cases/${c.id}/sanitize`}>
                         <button className="px-2.5 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-[11px] font-mono inline-flex items-center gap-1">
                           <Trash2 className="w-3 h-3" />
@@ -126,6 +171,12 @@ export default function DashboardPage() {
                         <button className="px-2.5 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px] font-mono inline-flex items-center gap-1">
                           <FileText className="w-3 h-3" />
                           <span>Certs</span>
+                        </button>
+                      </Link>
+                      <Link href={`/cases/${c.id}/timeline`}>
+                        <button className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono inline-flex items-center gap-1">
+                          <History className="w-3 h-3" />
+                          <span>Audit</span>
                         </button>
                       </Link>
                     </td>

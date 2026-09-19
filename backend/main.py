@@ -6,7 +6,7 @@ from routers import auth, cases, devices, operations, certificates, timeline, tr
 
 app = FastAPI(
     title="Sakshya Forensics API",
-    description="Integrated Secure Data Erasure & Advanced File Recovery Platform (SIH26149 / BSA 2023 Sec 63(4) / NIST SP 800-88 Rev.1)",
+    description="Integrated Secure Data Erasure & Advanced File Recovery Platform (BSA 2023 Sec 63(4) / NIST SP 800-88 Rev.1)",
     version="2.4.0"
 )
 

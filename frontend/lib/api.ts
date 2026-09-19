@@ -131,10 +131,26 @@ const DEFAULT_MOCK_CASES: Case[] = [
   },
 ];
 
+async function quickFetch(url: string, options: RequestInit = {}, timeoutMs = 2500): Promise<Response> {
+  if (typeof AbortController === "undefined") {
+    return fetch(url, options);
+  }
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 // API functions with offline/static fallbacks for Firebase Hosting
 export async function getCases(): Promise<Case[]> {
   try {
-    const res = await fetch(`${API_BASE}/cases`);
+    const res = await quickFetch(`${API_BASE}/cases`);
     if (res.ok) {
       const remoteCases: Case[] = await res.json();
       const localCases = getLocalCases();
@@ -156,7 +172,7 @@ export async function getCases(): Promise<Case[]> {
 
 export async function getCase(id: string): Promise<Case> {
   try {
-    const res = await fetch(`${API_BASE}/cases/${id}`);
+    const res = await quickFetch(`${API_BASE}/cases/${id}`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -180,7 +196,7 @@ export async function getCase(id: string): Promise<Case> {
 
 export async function createCase(data: { fir_number: string; case_type: string; officer_id: string; description?: string }): Promise<Case> {
   try {
-    const res = await fetch(`${API_BASE}/cases`, {
+    const res = await quickFetch(`${API_BASE}/cases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -192,9 +208,11 @@ export async function createCase(data: { fir_number: string; case_type: string; 
     }
   } catch (e) {}
 
-  const newId = `c${Date.now()}`;
+  // In offline/static demo fallback, map to the primary pre-rendered dynamic case route
+  // so static hosting routes without 404:
+  const targetId = "c1001-forensic-case-delhi";
   const newCase: Case = {
-    id: newId,
+    id: targetId,
     fir_number: data.fir_number || "FIR-2026/0892-CYBER",
     case_type: data.case_type || "Financial Cyber Fraud & Data Theft",
     officer_id: data.officer_id || "IO-0142",
@@ -210,7 +228,7 @@ export async function createCase(data: { fir_number: string; case_type: string; 
 
 export async function getCaseDevices(caseId: string): Promise<Device[]> {
   try {
-    const res = await fetch(`${API_BASE}/cases/${caseId}/devices`);
+    const res = await quickFetch(`${API_BASE}/cases/${caseId}/devices`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -239,7 +257,7 @@ export async function getCaseDevices(caseId: string): Promise<Device[]> {
 
 export async function registerDevice(caseId: string, data: any): Promise<Device> {
   try {
-    const res = await fetch(`${API_BASE}/cases/${caseId}/devices`, {
+    const res = await quickFetch(`${API_BASE}/cases/${caseId}/devices`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -274,7 +292,7 @@ export async function registerDevice(caseId: string, data: any): Promise<Device>
 
 export async function detectConnectedDrives() {
   try {
-    const res = await fetch(`${API_BASE}/devices/detect`);
+    const res = await quickFetch(`${API_BASE}/devices/detect`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -311,7 +329,7 @@ export async function detectConnectedDrives() {
 
 export async function createOperation(caseId: string, data: { device_id: string; type: string; method?: string }): Promise<Operation> {
   try {
-    const res = await fetch(`${API_BASE}/cases/${caseId}/operations`, {
+    const res = await quickFetch(`${API_BASE}/cases/${caseId}/operations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -333,7 +351,7 @@ export async function createOperation(caseId: string, data: { device_id: string;
 
 export async function getOperation(opId: string): Promise<Operation> {
   try {
-    const res = await fetch(`${API_BASE}/operations/${opId}`);
+    const res = await quickFetch(`${API_BASE}/operations/${opId}`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -351,7 +369,7 @@ export async function getOperation(opId: string): Promise<Operation> {
 
 export async function getOperationFiles(opId: string): Promise<RecoveredFile[]> {
   try {
-    const res = await fetch(`${API_BASE}/operations/${opId}/files`);
+    const res = await quickFetch(`${API_BASE}/operations/${opId}/files`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -391,7 +409,7 @@ export async function getOperationFiles(opId: string): Promise<RecoveredFile[]> 
 
 export async function getCaseCertificates(caseId: string): Promise<Certificate[]> {
   try {
-    const res = await fetch(`${API_BASE}/cases/${caseId}/certificates`);
+    const res = await quickFetch(`${API_BASE}/cases/${caseId}/certificates`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -431,7 +449,7 @@ export async function getCaseCertificates(caseId: string): Promise<Certificate[]
 
 export async function signCertificate(certId: string, officerId: string = "IO-0142"): Promise<Certificate> {
   try {
-    const res = await fetch(`${API_BASE}/certificates/${certId}/sign?officer_id=${officerId}`, {
+    const res = await quickFetch(`${API_BASE}/certificates/${certId}/sign?officer_id=${officerId}`, {
       method: "POST",
     });
     if (res.ok) return await res.json();
@@ -462,7 +480,7 @@ export async function signCertificate(certId: string, officerId: string = "IO-01
 
 export async function getCaseTimeline(caseId: string): Promise<AuditEvent[]> {
   try {
-    const res = await fetch(`${API_BASE}/cases/${caseId}/timeline`);
+    const res = await quickFetch(`${API_BASE}/cases/${caseId}/timeline`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -501,7 +519,7 @@ export async function getCaseTimeline(caseId: string): Promise<AuditEvent[]> {
 
 export async function verifyCaseTimeline(caseId: string) {
   try {
-    const res = await fetch(`${API_BASE}/cases/${caseId}/timeline/verify`);
+    const res = await quickFetch(`${API_BASE}/cases/${caseId}/timeline/verify`);
     if (res.ok) return await res.json();
   } catch (e) {}
 
@@ -517,7 +535,7 @@ export async function verifyCaseTimeline(caseId: string) {
 
 export async function getTrustStatus() {
   try {
-    const res = await fetch(`${API_BASE}/trust/status`);
+    const res = await quickFetch(`${API_BASE}/trust/status`);
     if (res.ok) return await res.json();
   } catch (e) {}
 

@@ -35,7 +35,22 @@ export default function CertificatesPage() {
     if (!activeCert) return;
     setIsSigning(true);
     try {
-      const updated = await signCertificate(activeCert.id, "IO-0142");
+      let storedBadge = "IO-0142";
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("sakshya_officer");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            storedBadge = parsed.badge || storedBadge;
+          }
+        } catch (e) {}
+      }
+
+      const activeBadge = currentType === "EVIDENCE_EXPERT"
+        ? (storedBadge.startsWith("EXPERT") ? storedBadge : "EXPERT-901")
+        : (storedBadge.startsWith("IO") ? storedBadge : "IO-0142");
+
+      const updated = await signCertificate(activeCert.id, activeBadge);
       setCertificates((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
       setSelectedCert(updated);
     } catch (e) {
@@ -48,18 +63,43 @@ export default function CertificatesPage() {
   const generateCertificateHtml = (cert: Certificate) => {
     const isSanitize = cert.type === "SANITIZATION";
     const isParty = cert.type === "EVIDENCE_PARTY";
+    const isExpert = cert.type === "EVIDENCE_EXPERT";
 
     const title = isSanitize
       ? "NIST SP 800-88 REV. 1 MEDIA SANITIZATION CERTIFICATE"
       : isParty
-      ? "BHARATIYA SAKSHYA ADHINIYAM 2023 - SEC 63(4) PART A CERTIFICATE"
-      : "BHARATIYA SAKSHYA ADHINIYAM 2023 - SEC 63(4) PART B CERTIFICATE";
+      ? "BHARATIYA SAKSHYA ADHINIYAM 2023 - SEC 63(4)(a) PART A CERTIFICATE"
+      : "BHARATIYA SAKSHYA ADHINIYAM 2023 - SEC 63(4)(b) PART B CERTIFICATE";
 
     const subtitle = isSanitize
       ? "Statutory Data Erasure & Remanence Verification Record"
       : isParty
-      ? "Certificate by Person in Lawful Charge of Computer / Device"
-      : "Certificate by Technical Expert / In-Charge of System Operations";
+      ? "Certificate by Person in Lawful Charge of Computer / Seized Media"
+      : "Certificate by Technical Forensic Expert / System In-Charge";
+
+    const signatoryLabel = isSanitize
+      ? "SANITIZATION SPECIALIST"
+      : isParty
+      ? "OFFICER IN LAWFUL CHARGE (IO)"
+      : "TECHNICAL FORENSIC EXPERT";
+
+    const signatoryName = isParty
+      ? (cert.signed_by || "IO-0142 (Inspr. Rajesh Kumar)")
+      : (cert.signed_by || "EXPERT-901 (Dr. Ananya Sharma)");
+
+    const legalText = isSanitize
+      ? "I hereby certify that media sanitization was executed in accordance with NIST SP 800-88 Rev. 1 guidelines with 0.00% data remanence across all target addressable and reallocated blocks."
+      : isParty
+      ? "I hereby certify that I am the person occupying an official position in relation to the lawful custody, management, and official handling of the electronic device/records described herein, in strict accordance with Section 63(4)(a) of Bharatiya Sakshya Adhiniyam 2023."
+      : "I hereby certify that the electronic record was produced by a computer system during the period over which the computer was operated properly, and all cryptographic hash algorithms and sector verification tools remained uncompromised, in strict accordance with Section 63(4)(b) of Bharatiya Sakshya Adhiniyam 2023.";
+
+    const stampText = cert.status === "SIGNED"
+      ? (isSanitize
+          ? "✓ CRYPTOGRAPHICALLY SIGNED & VERIFIED SANITIZED UNDER NIST SP 800-88 REV. 1"
+          : isParty
+          ? "✓ CRYPTOGRAPHICALLY SIGNED & OFFICIALLY STAMPED BY INVESTIGATING OFFICER (BSA 63(4)(a))"
+          : "✓ CRYPTOGRAPHICALLY SIGNED & OFFICIALLY STAMPED BY TECHNICAL FORENSIC EXPERT (BSA 63(4)(b))")
+      : "⚠️ PREVIEW DRAFT — AWAITING OFFICIAL STAMP & DIGITAL SIGNATURE";
 
     return `<!DOCTYPE html>
 <html>
@@ -69,15 +109,15 @@ export default function CertificatesPage() {
     body { font-family: 'Courier New', monospace; background: #0b0f19; color: #e2e8f0; padding: 24px; line-height: 1.5; font-size: 13px; }
     .card { border: 2px solid ${isSanitize ? '#10b981' : isParty ? '#06b6d4' : '#3b82f6'}; border-radius: 12px; padding: 24px; background: #131b2e; }
     .header { text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px; }
-    .title { font-size: 16px; font-weight: 900; color: ${isSanitize ? '#10b981' : isParty ? '#06b6d4' : '#3b82f6'}; letter-spacing: 0.5px; }
+    .title { font-size: 15px; font-weight: 900; color: ${isSanitize ? '#10b981' : isParty ? '#06b6d4' : '#3b82f6'}; letter-spacing: 0.5px; }
     .sub { font-size: 11px; color: #94a3b8; margin-top: 4px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .box { background: #0b0f19; border: 1px solid #1e293b; padding: 10px; border-radius: 6px; }
     .lbl { font-size: 10px; color: #64748b; font-weight: bold; }
     .val { font-size: 12px; color: #f8fafc; font-weight: bold; margin-top: 2px; }
     .hash { word-break: break-all; color: #06b6d4; font-size: 11px; }
-    .stamp { text-align: center; margin-top: 24px; padding: 12px; border: 2px dashed ${cert.status === 'SIGNED' ? '#10b981' : '#f59e0b'}; border-radius: 8px; color: ${cert.status === 'SIGNED' ? '#34d399' : '#fbbf24'}; }
-    .legal-text { font-size: 11px; color: #cbd5e1; margin-top: 16px; font-style: italic; background: #0b0f19; padding: 12px; border-radius: 6px; border-left: 3px solid #06b6d4; }
+    .stamp { text-align: center; margin-top: 24px; padding: 12px; border: 2px dashed ${cert.status === 'SIGNED' ? '#10b981' : '#f59e0b'}; border-radius: 8px; color: ${cert.status === 'SIGNED' ? '#34d399' : '#fbbf24'}; font-weight: bold; }
+    .legal-text { font-size: 11px; color: #cbd5e1; margin-top: 16px; font-style: italic; background: #0b0f19; padding: 12px; border-radius: 6px; border-left: 3px solid ${isSanitize ? '#10b981' : isParty ? '#06b6d4' : '#3b82f6'}; }
   </style>
 </head>
 <body>
@@ -90,7 +130,7 @@ export default function CertificatesPage() {
     <div class="grid">
       <div class="box"><div class="lbl">CASE / FIR NUMBER</div><div class="val">${caseId}</div></div>
       <div class="box"><div class="lbl">CERTIFICATE ID</div><div class="val">${cert.id}</div></div>
-      <div class="box"><div class="lbl">INVESTIGATING OFFICER</div><div class="val">${cert.signed_by || "IO-0142 (Inspector)"}</div></div>
+      <div class="box"><div class="lbl">${signatoryLabel}</div><div class="val">${signatoryName}</div></div>
       <div class="box"><div class="lbl">STATUS</div><div class="val">${cert.status}</div></div>
     </div>
 
@@ -105,11 +145,11 @@ export default function CertificatesPage() {
     </div>
 
     <div class="legal-text">
-      "I hereby certify that the electronic record contained herein was produced by a computer/system owned/operated in the ordinary course of official duty, and all safeguards under BSA 2023 Section 63(4) were strictly maintained without unauthorized alteration."
+      "${legalText}"
     </div>
 
     <div class="stamp">
-      ${cert.status === 'SIGNED' ? '✓ CRYPTOGRAPHICALLY SIGNED & OFFICIALLY STAMPED BY INVESTIGATING OFFICER' : '⚠️ PREVIEW DRAFT — AWAITING OFFICIAL STAMP & DIGITAL SIGNATURE'}
+      ${stampText}
     </div>
   </div>
 </body>

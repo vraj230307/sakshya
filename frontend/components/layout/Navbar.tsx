@@ -32,7 +32,6 @@ export default function Navbar() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-black tracking-wider text-white">SAKSHYA <span className="text-forensic-cyan font-mono text-xs font-semibold px-2 py-0.5 rounded bg-forensic-cyan/10 border border-forensic-cyan/30">સાક્ષ્ય</span></h1>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">SIH26149</span>
           </div>
           <p className="text-xs text-slate-400">National Forensic Data Erasure & Carving Workspace</p>
         </div>
